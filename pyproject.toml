@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuro-eeg"
+version = "1.0.0"
+description = "Real-time EEG band visualization and OSC streaming for OpenBCI Ganglion"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Mateo Larrea Ferro"},
+]
+
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "brainflow",
+    "numpy",
+    "scipy",
+    "python-osc",
+    "jinja2",
+    "pyserial",
+]
+
+[project.scripts]
+neuro = "launcher:main"
+
+[tool.setuptools]
+py-modules = ["launcher", "main", "openbci_service", "simulator_service", "osc_sender"]
+
+[tool.setuptools.package-data]
+"*" = ["templates/*.html", "static/**/*"]

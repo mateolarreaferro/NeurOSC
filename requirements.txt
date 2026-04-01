@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+brainflow
+numpy
+scipy
+python-osc
+jinja2
+pyserial

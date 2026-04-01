@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Neuro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #0e0e16;
+      --bg-tertiary: #13131d;
+      --bg-elevated: #181825;
+      --bg-hover: #1e1e2e;
+      --bg-card: #111119;
+
+      --accent: #00e5a0;
+      --accent-dim: #00b37d;
+      --accent-glow: rgba(0, 229, 160, 0.15);
+      --accent-cyan: #00d4ff;
+      --accent-purple: #a855f7;
+      --accent-blue: #3b82f6;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+
+      --text-primary: #e2e2e8;
+      --text-secondary: #8888a0;
+      --text-tertiary: #55556a;
+      --text-bright: #ffffff;
+
+      --border: #1e1e2e;
+      --border-light: #2a2a3a;
+      --border-accent: rgba(0, 229, 160, 0.25);
+
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 10px;
+      --radius-full: 9999px;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      --font-sans: 'Inter', -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: var(--space-md) var(--space-sm);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    .brand {
+      padding-bottom: var(--space-sm);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-header { display: flex; align-items: center; gap: 12px; }
+
+    .brand-logo {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700; font-size: 16px;
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px var(--accent-glow);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes logoPulse {
+      0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+      50% { box-shadow: 0 0 30px rgba(0, 229, 160, 0.25); }
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-mono);
+      font-size: 20px; font-weight: 600;
+      color: var(--text-bright);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-text .tagline {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .section { display: flex; flex-direction: column; gap: 6px; }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 10px; font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-light);
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    }
+
+    .card-header {
+      display: flex; align-items: flex-start;
+      gap: 8px; margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 13px; font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+    }
+
+    .card-subtitle { font-size: 11px; color: var(--text-tertiary); line-height: 1.4; }
+
+    .status-indicator {
+      width: 10px; height: 10px;
+      border-radius: var(--radius-full);
+      background: var(--text-tertiary);
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+    }
+
+    .status-indicator.connected {
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .field-group { margin-bottom: var(--space-sm); }
+
+    .field-label {
+      font-family: var(--font-mono);
+      font-size: 10px; font-weight: 500;
+      color: var(--text-tertiary);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px; display: block;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      transition: all 0.1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    input[type="text"]:hover, input[type="number"]:hover {
+      border-color: var(--border-light);
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow), 0 0 16px var(--accent-glow);
+    }
+
+    .input-row { display: flex; gap: var(--space-sm); }
+
+    /* Buttons */
+    .btn {
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 12px; font-weight: 500;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; border: none; outline: none;
+      transition: all 0.08s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: translateY(0);
+      user-select: none;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0) scale(0.97); transition-duration: 0.04s; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border: 1px solid var(--accent);
+    }
+    .btn-primary:hover { background: var(--accent-dim); box-shadow: 0 0 16px var(--accent-glow), 0 2px 8px rgba(0,0,0,0.3); }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+    }
+    .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-tertiary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: var(--accent-red); box-shadow: 0 0 12px rgba(239,68,68,0.1); }
+
+    .btn-group { display: flex; gap: var(--space-sm); }
+
+    /* Toggles */
+    .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .toggle-btn {
+      padding: 5px 10px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 11px; font-weight: 500;
+      background: var(--bg-primary);
+      color: var(--text-tertiary);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.08s cubic-bezier(0.22, 1, 0.36, 1);
+      letter-spacing: 0.02em;
+      transform: scale(1);
+      user-select: none;
+    }
+
+    .toggle-btn:hover {
+      color: var(--text-secondary);
+      border-color: var(--border-light);
+      transform: scale(1.04);
+      box-shadow: 0 0 8px rgba(255,255,255,0.03);
+    }
+
+    .toggle-btn:active { transform: scale(0.96); transition-duration: 0.04s; }
+
+    .toggle-btn.active {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border-color: var(--border-accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .toggle-btn.active:hover {
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 10px; font-weight: 500;
+      background: var(--bg-primary);
+      color: var(--text-tertiary);
+      border: 1px solid var(--border);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .status-pill.active {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border-color: var(--border-accent);
+      animation: pillPop 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes pillPop {
+      0% { transform: scale(0.9); }
+      60% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    .divider { height: 1px; background: var(--border); margin: var(--space-sm) 0; }
+
+    .helper-text {
+      font-size: 10px; color: var(--text-tertiary);
+      line-height: 1.4; margin-top: 4px;
+    }
+
+    /* ===== MAIN ===== */
+    .main {
+      flex: 1;
+      padding: var(--space-md);
+      display: flex; flex-direction: column;
+      gap: var(--space-sm);
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .main-header {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    .main-title-group h2 {
+      font-family: var(--font-mono);
+      font-size: 18px; font-weight: 600;
+      color: var(--text-bright);
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+    }
+
+    .main-subtitle {
+      font-size: 12px; color: var(--text-tertiary);
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 3px;
+    }
+
+    .mode-tab {
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 12px; font-weight: 500;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: none; cursor: pointer;
+      transition: all 0.1s cubic-bezier(0.22, 1, 0.36, 1);
+      letter-spacing: 0.02em;
+      user-select: none;
+    }
+
+    .mode-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+    .mode-tab:active { transform: scale(0.95); transition-duration: 0.04s; }
+    .mode-tab.active { background: var(--accent); color: var(--bg-primary); box-shadow: 0 0 14px var(--accent-glow); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: var(--space-sm);
+      flex: 1; min-height: 0;
+    }
+
+    /* Chart area */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-sm);
+      display: flex; flex-direction: column;
+      min-height: 0;
+    }
+
+    .chart-header {
+      display: flex; justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      flex-shrink: 0;
+    }
+
+    .chart-title {
+      font-family: var(--font-mono);
+      font-size: 14px; font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+    }
+
+    .chart-description { font-size: 11px; color: var(--text-tertiary); }
+
+    .chart-meta {
+      font-family: var(--font-mono);
+      font-size: 11px; color: var(--text-tertiary);
+      text-align: right;
+    }
+
+    .chart-container {
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm);
+      position: relative; min-height: 0;
+      display: flex; flex-direction: column;
+    }
+
+    #timeseriesChart, #fftChart, #bandsChart { width: 100%; height: 100%; flex: 1; }
+
+    .chart-footer {
+      display: flex; align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap; flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      gap: 6px; padding: 4px 12px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 10px; font-weight: 500;
+      background: var(--bg-primary);
+      color: var(--text-tertiary);
+      border: 1px solid var(--border);
+      letter-spacing: 0.04em;
+      transition: all 0.1s ease;
+    }
+
+    .badge:hover {
+      border-color: var(--border-light);
+      color: var(--text-secondary);
+    }
+
+    .badge-dot {
+      width: 5px; height: 5px;
+      border-radius: var(--radius-full);
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .alert {
+      position: fixed; top: 16px; right: 16px;
+      max-width: 380px; padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 12px; line-height: 1.5;
+      display: none; z-index: 9999;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 4px 24px rgba(0, 229, 160, 0.08);
+      animation: alertSlide 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes alertSlide {
+      0% { opacity: 0; transform: translateX(20px) scale(0.95); }
+      100% { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    /* Toggle switch */
+    .toggle-switch { position: relative; display: inline-block; width: 32px; height: 18px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border);
+      transition: 0.2s; border-radius: 18px;
+    }
+
+    .toggle-slider:before {
+      position: absolute; content: "";
+      height: 12px; width: 12px; left: 2px; bottom: 2px;
+      background-color: var(--text-tertiary);
+      transition: 0.2s; border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider { background-color: var(--accent-glow); border-color: var(--border-accent); box-shadow: 0 0 8px var(--accent-glow); }
+    input:checked + .toggle-slider:before { background-color: var(--accent); transform: translateX(14px); }
+
+    .toggle-slider:hover { border-color: var(--border-light); }
+    .toggle-slider:active:before { width: 16px; }
+
+    .custom-slider {
+      -webkit-appearance: none; appearance: none;
+      height: 3px; background: var(--border); border-radius: var(--radius-full); outline: none;
+    }
+
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px;
+      background: var(--accent); border-radius: 50%; cursor: pointer;
+      box-shadow: 0 0 6px var(--accent-glow);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+
+    .custom-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.3);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .custom-slider:active::-webkit-slider-thumb {
+      transform: scale(1.1);
+    }
+
+    /* Chart empty state */
+    .chart-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .chart-empty .empty-icon {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--border-light);
+      display: flex; align-items: center; justify-content: center;
+      animation: emptyPulse 3s ease-in-out infinite;
+    }
+
+    .chart-empty .empty-icon svg { width: 20px; height: 20px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.5; }
+
+    @keyframes emptyPulse {
+      0%, 100% { border-color: var(--border); opacity: 0.6; }
+      50% { border-color: var(--border-light); opacity: 1; }
+    }
+
+    .chart-empty .empty-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      letter-spacing: 0.04em;
+    }
+
+    .chart-empty .empty-hint {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      opacity: 0.6;
+    }
+
+    /* OSC active state */
+    .osc-active-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+
+    .osc-active-indicator.on {
+      color: var(--accent);
+      background: var(--accent-glow);
+      border: 1px solid var(--border-accent);
+    }
+
+    .osc-active-indicator.off {
+      color: var(--text-tertiary);
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+    }
+
+    .osc-active-indicator .osc-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .osc-active-indicator.on .osc-dot {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* OSC panel sections */
+    .osc-section { margin-bottom: var(--space-sm); }
+
+    .osc-section-title {
+      font-family: var(--font-mono);
+      font-size: 9px; font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .osc-section-title::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* OSC address preview */
+    .osc-preview {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent);
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      margin-top: 6px;
+      line-height: 1.7;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-header">
+        <div class="brand-logo">N</div>
+        <div class="brand-text">
+          <h1>NEURO</h1>
+          <div class="tagline">EEG Signal Interface</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Device</div>
+
+      <div id="global-error" class="alert"></div>
+      <div id="global-success" class="alert"></div>
+
+      <!-- Simulator -->
+      <div class="card" style="border-color: var(--border-light);">
+        <div class="card-title" style="margin-bottom: var(--space-sm);">Simulator</div>
+        <div class="toggle-group" style="margin-bottom: var(--space-sm);">
+          <button id="toggle-simulator" class="toggle-btn">Enable</button>
+        </div>
+        <div id="simulator-controls" style="display:none; margin-top: var(--space-md);">
+          <label class="field-label">Brain State</label>
+          <select id="simulator-mode" style="width: 100%; padding: 7px 10px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-mono); font-size: 12px;">
+            <option value="normal">Normal</option>
+            <option value="meditation">Meditation</option>
+            <option value="focused">Focused</option>
+            <option value="drowsy">Drowsy</option>
+          </select>
+        </div>
+        <div class="helper-text">Synthetic EEG for testing without hardware</div>
+      </div>
+
+      <!-- Connection + Stream -->
+      <div class="card">
+        <div class="card-header">
+          <div style="flex: 1;">
+            <div class="card-title">Connection</div>
+            <div class="card-subtitle" id="status-subtext">Idle</div>
+          </div>
+          <div class="status-indicator" id="status-dot"></div>
+          <span id="stream-pill" class="status-pill">Idle</span>
+        </div>
+        <div class="field-group">
+          <input id="serial-input" type="text" placeholder="/dev/tty... or MAC address" />
+        </div>
+        <div class="btn-group" style="margin-bottom: 6px;">
+          <button id="btn-connect" class="btn btn-primary" style="flex: 1;">Connect</button>
+          <button id="btn-disconnect" class="btn btn-danger">Disconnect</button>
+        </div>
+        <div class="btn-group">
+          <button id="btn-start" class="btn btn-primary" style="flex: 1;">Start</button>
+          <button id="btn-stop" class="btn btn-secondary">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label" id="dsp-section-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+        <span>DSP Pipeline</span>
+        <span id="dsp-toggle-icon" style="font-size: 12px; color: var(--text-tertiary);">&#9654;</span>
+      </div>
+      <div id="dsp-section-content" class="card" style="display: none;">
+        <div class="osc-section">
+          <div class="osc-section-title">Filters</div>
+          <div class="toggle-group">
+            <button id="dsp-car" class="toggle-btn active dsp-toggle" data-key="car_enabled">CAR</button>
+            <button id="dsp-bandpass" class="toggle-btn active dsp-toggle" data-key="bandpass_enabled">BP 1-45Hz</button>
+            <button id="dsp-notch" class="toggle-btn active dsp-toggle" data-key="notch_enabled">Notch 60Hz</button>
+            <button id="dsp-artifact" class="toggle-btn active dsp-toggle" data-key="artifact_enabled">Artifacts</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="osc-section">
+          <div class="osc-section-title">Normalization</div>
+          <div class="toggle-group">
+            <button id="dsp-log" class="toggle-btn dsp-toggle" data-key="log_transform">Log</button>
+            <button id="dsp-baseline" class="toggle-btn dsp-toggle" data-key="baseline_normalize">Z-Score</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="osc-section" style="margin-bottom: 0;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase;">Smooth</span>
+            <input type="range" id="dsp-smoothing" min="0.05" max="1.0" step="0.05" value="0.3" class="custom-slider" style="flex: 1;">
+            <span id="dsp-smoothing-val" style="font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); min-width: 30px;">0.30</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="main-header">
+      <div class="main-title-group">
+        <h2>Signal Monitor</h2>
+        <p class="main-subtitle">Real-time EEG visualization</p>
+      </div>
+      <div class="mode-tabs">
+        <button id="tab-timeseries" class="mode-tab active">Traces</button>
+        <button id="tab-fft" class="mode-tab">FFT</button>
+        <button id="tab-bands" class="mode-tab">Bands</button>
+      </div>
+    </header>
+
+    <section class="main-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title" id="visual-title">Time Series</div>
+            <div class="chart-description" id="visual-subtitle">4-channel EEG traces</div>
+          </div>
+          <div class="chart-meta" id="visual-meta">traces // 4s window</div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-empty" id="chart-empty">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="empty-text">No signal</div>
+            <div class="empty-hint">Connect and start streaming to see data</div>
+          </div>
+          <canvas id="timeseriesChart"></canvas>
+          <canvas id="fftChart" style="display:none;"></canvas>
+          <canvas id="bandsChart" style="display:none;"></canvas>
+        </div>
+
+        <div class="chart-footer">
+          <div class="badge"><span class="badge-dot"></span><span id="chip-mode">idle</span></div>
+          <div class="badge">OSC <span id="chip-osc">off</span></div>
+          <div id="scale-controls" style="margin-left: auto; display: flex; align-items: center; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); letter-spacing: 0.04em;">AUTO</label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-scale-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="range" id="scale-slider" min="0" max="100" value="30" step="1" class="custom-slider" style="width: 100px; cursor: pointer;">
+              <span id="scale-value" style="font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); min-width: 50px;">+/-100</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="error-msg" class="alert" style="position: static; margin-top: var(--space-sm);"></div>
+      </div>
+
+      <!-- OSC Panel -->
+      <div class="section" style="overflow-y: auto; min-height: 0;">
+        <div class="section-label">OSC Output</div>
+        <div class="card" style="display: flex; flex-direction: column; gap: 0;">
+
+          <!-- Connection -->
+          <div class="osc-section">
+            <div class="osc-section-title">Connection</div>
+            <div class="field-group" style="margin-bottom: var(--space-sm);">
+              <div class="input-row">
+                <input id="osc-ip" type="text" value="127.0.0.1" placeholder="IP" />
+                <input id="osc-port" type="number" value="9000" placeholder="Port" style="max-width: 90px;" />
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+              <button id="osc-enable-btn" class="btn btn-secondary" style="flex: 1;">Enable OSC</button>
+              <div id="osc-status-indicator" class="osc-active-indicator off">
+                <span class="osc-dot"></span><span id="osc-status-text">Off</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Data Types -->
+          <div class="osc-section">
+            <div class="osc-section-title">Data Types</div>
+            <div class="toggle-group">
+              <button id="osc-raw-toggle" class="toggle-btn active">Raw</button>
+              <button id="osc-bands-toggle" class="toggle-btn">Bands</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Channels -->
+          <div class="osc-section">
+            <div class="osc-section-title">Channels</div>
+            <div class="toggle-group">
+              <button class="toggle-btn active osc-ch-toggle" data-ch="CH1">CH1</button>
+              <button class="toggle-btn active osc-ch-toggle" data-ch="CH2">CH2</button>
+              <button class="toggle-btn active osc-ch-toggle" data-ch="CH3">CH3</button>
+              <button class="toggle-btn active osc-ch-toggle" data-ch="CH4">CH4</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Bands -->
+          <div class="osc-section">
+            <div class="osc-section-title">Frequency Bands</div>
+            <div class="toggle-group">
+              <button class="toggle-btn active osc-band-toggle" data-band="delta" style="--band-color: var(--accent-red);">delta</button>
+              <button class="toggle-btn active osc-band-toggle" data-band="theta" style="--band-color: var(--accent-amber);">theta</button>
+              <button class="toggle-btn active osc-band-toggle" data-band="alpha" style="--band-color: var(--accent);">alpha</button>
+              <button class="toggle-btn active osc-band-toggle" data-band="beta" style="--band-color: var(--accent-cyan);">beta</button>
+              <button class="toggle-btn active osc-band-toggle" data-band="gamma" style="--band-color: var(--accent-purple);">gamma</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Value Types -->
+          <div class="osc-section">
+            <div class="osc-section-title">Values</div>
+            <div class="toggle-group">
+              <button id="osc-absolute-toggle" class="toggle-btn active">Absolute</button>
+              <button id="osc-relative-toggle" class="toggle-btn active">Relative</button>
+              <button id="osc-averages-toggle" class="toggle-btn active">Averages</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Prefix -->
+          <div class="osc-section">
+            <div class="osc-section-title">Address Prefix</div>
+            <input id="osc-prefix" type="text" value="/neuro" style="font-family: var(--font-mono); font-size: 12px;" />
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Address Preview -->
+          <div class="osc-section" style="margin-bottom: 0;">
+            <div class="osc-section-title">Address Preview</div>
+            <div class="osc-preview" id="osc-preview">
+              /neuro/raw/CH1 ... CH4<br>
+              /neuro/bands/CH1/alpha<br>
+              /neuro/bands/alpha (avg)<br>
+              /neuro/elements/alpha_relative
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const WINDOW_SEC = 4.0;
+    const UPDATE_INTERVAL_MS = 50;
+
+    let ws = null;
+    let currentMode = "timeseries";
+    let connected = false;
+    let streaming = false;
+    let oscEnabled = false;
+    let oscSendRaw = true;
+    let oscSendBands = false;
+
+    // Granular OSC state
+    let oscChannels = ["CH1", "CH2", "CH3", "CH4"];
+    let oscBands = ["delta", "theta", "alpha", "beta", "gamma"];
+    let oscAbsolute = true;
+    let oscRelative = true;
+    let oscAverages = true;
+    let oscPrefix = "/neuro";
+
+    const statusDot = document.getElementById("status-dot");
+    const statusSub = document.getElementById("status-subtext");
+    const streamPill = document.getElementById("stream-pill");
+    const chipMode = document.getElementById("chip-mode");
+    const chipOsc = document.getElementById("chip-osc");
+    const globalError = document.getElementById("global-error");
+    const globalSuccess = document.getElementById("global-success");
+    const errorMsg = document.getElementById("error-msg");
+    const visualTitle = document.getElementById("visual-title");
+    const visualSubtitle = document.getElementById("visual-subtitle");
+    const visualMeta = document.getElementById("visual-meta");
+
+    function showError(msg) {
+      globalError.textContent = msg;
+      globalError.style.display = "block";
+      globalError.style.borderColor = "rgba(239,68,68,0.4)";
+      globalSuccess.style.display = "none";
+      setTimeout(() => { globalError.style.display = "none"; }, 6000);
+    }
+
+    function showSuccess(msg) {
+      globalSuccess.textContent = msg;
+      globalSuccess.style.display = "block";
+      globalError.style.display = "none";
+      setTimeout(() => { globalSuccess.style.display = "none"; }, 4000);
+    }
+
+    function setStatus() {
+      statusDot.classList.toggle("connected", connected);
+      statusSub.textContent = streaming ? "Streaming" : connected ? "Connected" : "Idle";
+      streamPill.textContent = streaming ? "Live" : connected ? "Ready" : "Idle";
+      streamPill.classList.toggle("active", streaming);
+      chipMode.textContent = streaming
+        ? `${currentMode === "timeseries" ? "traces" : currentMode}`
+        : "idle";
+      updateButtonStates();
+    }
+
+    function updateButtonStates() {
+      const btnConnect = document.getElementById("btn-connect");
+      const btnDisconnect = document.getElementById("btn-disconnect");
+      const btnStart = document.getElementById("btn-start");
+      const btnStop = document.getElementById("btn-stop");
+      const serialInput = document.getElementById("serial-input");
+
+      // Connect/disconnect
+      btnConnect.disabled = connected;
+      btnConnect.style.opacity = connected ? '0.4' : '1';
+      btnDisconnect.disabled = !connected;
+      btnDisconnect.style.opacity = connected ? '1' : '0.4';
+
+      // Start/stop
+      btnStart.disabled = !connected || streaming;
+      btnStart.style.opacity = (!connected || streaming) ? '0.4' : '1';
+      btnStop.disabled = !streaming;
+      btnStop.style.opacity = streaming ? '1' : '0.4';
+
+      // Serial input: hide in simulator mode
+      const serialField = serialInput.closest('.field-group');
+      if (serialField) {
+        serialField.style.display = useSimulator ? 'none' : 'block';
+      }
+    }
+
+    function setOscChip() {
+      chipOsc.textContent = oscEnabled
+        ? [oscSendRaw ? "raw" : null, oscSendBands ? "bands" : null].filter(Boolean).join("+") || "on"
+        : "off";
+
+      // Update OSC panel indicator
+      const indicator = document.getElementById("osc-status-indicator");
+      const statusText = document.getElementById("osc-status-text");
+      if (oscEnabled) {
+        indicator.classList.remove("off"); indicator.classList.add("on");
+        statusText.textContent = "Live";
+      } else {
+        indicator.classList.remove("on"); indicator.classList.add("off");
+        statusText.textContent = "Off";
+      }
+    }
+
+    function updateOscPreview() {
+      const p = oscPrefix;
+      let lines = [];
+
+      // Raw timeseries
+      if (oscSendRaw) {
+        oscChannels.forEach(ch => {
+          lines.push(`${p}/raw/${ch}`);
+        });
+        if (oscChannels.length > 0) {
+          lines.push(`${p}/raw`);
+        }
+      }
+
+      // Band powers
+      if (oscSendBands) {
+        // Per-channel per-band
+        oscChannels.forEach(ch => {
+          oscBands.forEach(band => {
+            if (oscAbsolute) lines.push(`${p}/bands/${ch}/${band}`);
+            if (oscRelative) lines.push(`${p}/bands/${ch}/${band}-relative`);
+          });
+        });
+
+        // Cross-channel averages
+        if (oscAverages) {
+          oscBands.forEach(band => {
+            lines.push(`${p}/bands/${band}`);
+            lines.push(`${p}/bands/${band}/max`);
+            lines.push(`${p}/bands/${band}/min`);
+          });
+
+          // Muse-compatible combined
+          oscBands.forEach(band => {
+            lines.push(`${p}/elements/${band}_absolute`);
+            lines.push(`${p}/elements/${band}_relative`);
+          });
+        }
+      }
+
+      if (lines.length === 0) {
+        lines.push("No OSC messages configured");
+      }
+
+      document.getElementById("osc-preview").innerHTML = lines
+        .map(l => `<span style="opacity: 0.9;">${l}</span>`)
+        .join("<br>");
+    }
+
+    async function postJSON(url, data) {
+      try {
+        const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data || {}) });
+        if (!res.ok) {
+          const text = await res.text();
+          try { return JSON.parse(text); } catch { return { status: "error", message: `HTTP ${res.status}: ${text.slice(0, 200)}` }; }
+        }
+        return res.json();
+      } catch (e) {
+        return { status: "error", message: e.message };
+      }
+    }
+
+    async function refreshStatus() {
+      const res = await fetch("/api/status");
+      const json = await res.json();
+      connected = json.connected;
+      streaming = json.streaming;
+      setStatus();
+    }
+
+    // Connect
+    document.getElementById("btn-connect").onclick = async () => {
+      const input = document.getElementById("serial-input").value.trim();
+      const btn = document.getElementById("btn-connect");
+      let payload;
+      if (!input) payload = { serial_port: "", mac_address: "" };
+      else if (input.includes(":")) payload = { serial_port: "", mac_address: input };
+      else payload = { serial_port: input, mac_address: "" };
+
+      btn.disabled = true; btn.textContent = "Connecting...";
+      try {
+        const json = await postJSON("/api/connect", payload);
+        if (json.status === "ok") { connected = true; showSuccess("Connected"); }
+        else showError(json.message || "Connection failed");
+      } catch (e) { showError(e.message); }
+      finally { btn.disabled = false; btn.textContent = "Connect"; setStatus(); }
+    };
+
+    document.getElementById("btn-disconnect").onclick = async () => {
+      await postJSON("/api/disconnect", {});
+      connected = false; streaming = false; closeWS();
+      showSuccess("Disconnected"); setStatus();
+    };
+
+    document.getElementById("btn-start").onclick = async () => {
+      if (!connected) { showError("Connect first"); return; }
+      const json = await postJSON("/api/start", {});
+      if (json.status === "ok") { streaming = true; openWS(); showSuccess("Streaming"); }
+      else showError(json.message || "Failed");
+      setStatus();
+    };
+
+    document.getElementById("btn-stop").onclick = async () => {
+      await postJSON("/api/stop", {});
+      streaming = false; closeWS();
+      setStatus();
+    };
+
+    // OSC controls
+    const oscRawToggle = document.getElementById("osc-raw-toggle");
+    const oscBandsToggle = document.getElementById("osc-bands-toggle");
+    const oscEnableBtn = document.getElementById("osc-enable-btn");
+
+    oscRawToggle.onclick = () => { oscSendRaw = !oscSendRaw; oscRawToggle.classList.toggle("active", oscSendRaw); pushOscConfig(); };
+    oscBandsToggle.onclick = () => { oscSendBands = !oscSendBands; oscBandsToggle.classList.toggle("active", oscSendBands); pushOscConfig(); };
+
+    oscEnableBtn.onclick = () => {
+      oscEnabled = !oscEnabled;
+      oscEnableBtn.textContent = oscEnabled ? "Disable OSC" : "Enable OSC";
+      oscEnableBtn.classList.toggle("btn-primary", oscEnabled);
+      oscEnableBtn.classList.toggle("btn-secondary", !oscEnabled);
+      pushOscConfig();
+    };
+
+    // Channel toggles
+    document.querySelectorAll(".osc-ch-toggle").forEach(btn => {
+      btn.onclick = () => {
+        btn.classList.toggle("active");
+        oscChannels = Array.from(document.querySelectorAll(".osc-ch-toggle.active")).map(b => b.dataset.ch);
+        pushGranularConfig();
+      };
+    });
+
+    // Band toggles
+    document.querySelectorAll(".osc-band-toggle").forEach(btn => {
+      btn.onclick = () => {
+        btn.classList.toggle("active");
+        oscBands = Array.from(document.querySelectorAll(".osc-band-toggle.active")).map(b => b.dataset.band);
+        pushGranularConfig();
+      };
+    });
+
+    // Value type toggles
+    document.getElementById("osc-absolute-toggle").onclick = function() { oscAbsolute = !oscAbsolute; this.classList.toggle("active", oscAbsolute); pushGranularConfig(); };
+    document.getElementById("osc-relative-toggle").onclick = function() { oscRelative = !oscRelative; this.classList.toggle("active", oscRelative); pushGranularConfig(); };
+    document.getElementById("osc-averages-toggle").onclick = function() { oscAverages = !oscAverages; this.classList.toggle("active", oscAverages); pushGranularConfig(); };
+
+    // Prefix input
+    document.getElementById("osc-prefix").addEventListener("change", function() {
+      oscPrefix = this.value.trim() || "/neuro";
+      pushGranularConfig();
+    });
+
+    async function pushOscConfig() {
+      const ip = document.getElementById("osc-ip").value.trim() || "127.0.0.1";
+      const port = parseInt(document.getElementById("osc-port").value.trim() || "9000", 10);
+      await postJSON("/api/osc_config", { ip, port, enabled: oscEnabled, send_raw: oscSendRaw, send_bands: oscSendBands });
+      setOscChip();
+      updateOscPreview();
+    }
+
+    async function pushGranularConfig() {
+      await postJSON("/api/osc_granular", {
+        channels: oscChannels,
+        bands: oscBands,
+        send_absolute: oscAbsolute,
+        send_relative: oscRelative,
+        send_averages: oscAverages,
+        osc_prefix: oscPrefix,
+      });
+      updateOscPreview();
+    }
+
+    // Mode tabs
+    document.getElementById("tab-timeseries").onclick = () => switchMode("timeseries");
+    document.getElementById("tab-fft").onclick = () => switchMode("fft");
+    document.getElementById("tab-bands").onclick = () => switchMode("bands");
+
+    function switchMode(mode) {
+      if (mode === currentMode) return;
+      currentMode = mode;
+      document.getElementById("tab-timeseries").classList.toggle("active", mode === "timeseries");
+      document.getElementById("tab-fft").classList.toggle("active", mode === "fft");
+      document.getElementById("tab-bands").classList.toggle("active", mode === "bands");
+
+      document.getElementById("timeseriesChart").style.display = "none";
+      document.getElementById("fftChart").style.display = "none";
+      document.getElementById("bandsChart").style.display = "none";
+
+      if (mode === "timeseries") {
+        visualTitle.textContent = "Time Series";
+        visualSubtitle.textContent = "4-channel EEG traces";
+        document.getElementById("timeseriesChart").style.display = "block";
+      } else if (mode === "fft") {
+        visualTitle.textContent = "FFT Spectrum";
+        visualSubtitle.textContent = "Power spectral density";
+        document.getElementById("fftChart").style.display = "block";
+      } else {
+        visualTitle.textContent = "Frequency Bands";
+        visualSubtitle.textContent = "delta / theta / alpha / beta / gamma";
+        document.getElementById("bandsChart").style.display = "block";
+      }
+
+      visualMeta.textContent = `${mode} // ${WINDOW_SEC}s`;
+      if (ws) ws.send(JSON.stringify({ mode, window_sec: WINDOW_SEC, interval_ms: UPDATE_INTERVAL_MS }));
+      setStatus();
+    }
+
+    // Chart colors (neuroscience palette)
+    const chartColors = ["#00e5a0", "#00d4ff", "#a855f7", "#f59e0b"];
+    const bandColors = ["#ef4444", "#f59e0b", "#00e5a0", "#00d4ff", "#a855f7"];
+
+    let tsYMin = -100, tsYMax = 100;
+    let fftYMin = -40, fftYMax = 10;
+    let bandsYMax = 50;
+
+    const chartDefaults = {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 80, easing: 'linear' },
+    };
+
+    const darkGrid = { color: "rgba(255,255,255,0.04)" };
+    const darkTick = { color: "#55556a", font: { family: 'JetBrains Mono', size: 10 } };
+    const darkLegend = { labels: { color: "#8888a0", usePointStyle: true, font: { family: 'JetBrains Mono', size: 10, weight: '500' }, padding: 16 } };
+
+    let tsChart = new Chart(document.getElementById("timeseriesChart").getContext("2d"), {
+      type: "line",
+      data: { labels: [], datasets: [] },
+      options: { ...chartDefaults,
+        scales: { x: { ticks: darkTick, grid: darkGrid }, y: { ticks: darkTick, grid: darkGrid } },
+        plugins: { legend: darkLegend },
+        elements: { line: { tension: 0.35, borderWidth: 1.5 }, point: { radius: 0 } },
+      },
+    });
+
+    let fftChart = new Chart(document.getElementById("fftChart").getContext("2d"), {
+      type: "line",
+      data: { labels: [], datasets: [] },
+      options: { ...chartDefaults, animation: { duration: 120, easing: 'linear' },
+        scales: {
+          x: { ticks: darkTick, grid: darkGrid, title: { display: true, text: 'Hz', color: "#55556a", font: { family: 'JetBrains Mono', size: 10 } } },
+          y: { ticks: darkTick, grid: darkGrid, title: { display: true, text: 'dB', color: "#55556a", font: { family: 'JetBrains Mono', size: 10 } } },
+        },
+        plugins: { legend: darkLegend },
+        elements: { line: { tension: 0.1, borderWidth: 1.5 }, point: { radius: 0 } },
+      },
+    });
+
+    let bandsChart = new Chart(document.getElementById("bandsChart").getContext("2d"), {
+      type: "bar",
+      data: { labels: [], datasets: [] },
+      options: { ...chartDefaults, animation: { duration: 150, easing: 'easeInOutQuad' },
+        scales: {
+          x: { ticks: darkTick, grid: darkGrid },
+          y: { type: 'logarithmic', min: 1, max: 10000,
+            ticks: { ...darkTick, callback: v => [1,10,50,100,500,1000,5000,10000].includes(v) ? v : '' },
+            grid: darkGrid,
+            title: { display: true, text: 'Power (log)', color: "#55556a", font: { family: 'JetBrains Mono', size: 10 } }
+          },
+        },
+        plugins: { legend: darkLegend },
+      },
+    });
+
+    // Scale controls
+    let autoScaleEnabled = false;
+    let scaleValue = 100;
+    const scaleSlider = document.getElementById('scale-slider');
+    const scaleValueDisplay = document.getElementById('scale-value');
+    const autoScaleToggle = document.getElementById('auto-scale-toggle');
+
+    // Logarithmic mapping: slider 0-100 → scale 10-10000
+    // Makes low end (10-500) take ~70% of the slider travel
+    function sliderToScale(t) {
+      // t: 0-100 → exponential curve → 10-10000
+      return Math.round(10 * Math.pow(10, (t / 100) * 3));
+    }
+
+    function scaleToSlider(s) {
+      return Math.round((Math.log10(s / 10) / 3) * 100);
+    }
+
+    scaleSlider.value = scaleToSlider(scaleValue);
+
+    scaleSlider.addEventListener('input', e => {
+      scaleValue = sliderToScale(parseInt(e.target.value));
+      scaleValueDisplay.textContent = `+/-${scaleValue}`;
+    });
+    autoScaleToggle.addEventListener('change', e => { autoScaleEnabled = e.target.checked; scaleSlider.disabled = autoScaleEnabled; scaleSlider.style.opacity = autoScaleEnabled ? '0.3' : '1'; });
+
+    let chartHasData = false;
+    function hideEmptyState() {
+      if (!chartHasData) {
+        document.getElementById('chart-empty').style.opacity = '0';
+        setTimeout(() => { document.getElementById('chart-empty').style.display = 'none'; }, 300);
+        chartHasData = true;
+      }
+    }
+
+    function updateTimeSeriesChart(channels, data) {
+      if (!data || !data.length) return;
+      hideEmptyState();
+      const labels = Array.from({ length: data[0].length }, (_, i) => i.toString());
+      if (autoScaleEnabled) {
+        let dMin = Infinity, dMax = -Infinity;
+        data.forEach(ch => ch.forEach(v => { if (v < dMin) dMin = v; if (v > dMax) dMax = v; }));
+        tsYMin = tsYMin * 0.85 + dMin * 0.15; tsYMax = tsYMax * 0.85 + dMax * 0.15;
+        const pad = (tsYMax - tsYMin) * 0.1;
+        tsChart.options.scales.y.min = tsYMin - pad; tsChart.options.scales.y.max = tsYMax + pad;
+      } else {
+        tsChart.options.scales.y.min = -scaleValue; tsChart.options.scales.y.max = scaleValue;
+      }
+      tsChart.data.labels = labels;
+      if (tsChart.data.datasets.length !== channels.length) {
+        tsChart.data.datasets = channels.map((ch, i) => ({ label: ch, data: data[i], borderColor: chartColors[i % chartColors.length], backgroundColor: "transparent" }));
+      } else { channels.forEach((_, i) => { tsChart.data.datasets[i].data = data[i]; }); }
+      tsChart.update("none");
+    }
+
+    function updateFFTChart(channels, freqs, psd) {
+      if (!psd || !psd.length || !freqs || !freqs.length) return;
+      hideEmptyState();
+      if (autoScaleEnabled) {
+        let dMin = Infinity, dMax = -Infinity;
+        psd.forEach(ch => ch.forEach(v => { if (v < dMin) dMin = v; if (v > dMax) dMax = v; }));
+        fftYMin = fftYMin * 0.85 + dMin * 0.15; fftYMax = fftYMax * 0.85 + dMax * 0.15;
+        const pad = (fftYMax - fftYMin) * 0.1;
+        fftChart.options.scales.y.min = fftYMin - pad; fftChart.options.scales.y.max = fftYMax + pad;
+      } else { fftChart.options.scales.y.min = 0; fftChart.options.scales.y.max = scaleValue; }
+      fftChart.data.labels = freqs.map(f => f.toFixed(1));
+      if (fftChart.data.datasets.length !== channels.length) {
+        fftChart.data.datasets = channels.map((ch, i) => ({ label: ch, data: psd[i], borderColor: chartColors[i % chartColors.length], backgroundColor: "transparent" }));
+      } else { channels.forEach((_, i) => { fftChart.data.datasets[i].data = psd[i]; }); }
+      fftChart.update("none");
+    }
+
+    function updateBandsChart(channels, bandNames, values) {
+      if (!values || !values.length) return;
+      hideEmptyState();
+      if (autoScaleEnabled) {
+        let dMax = 0;
+        values.forEach(ch => ch.forEach(v => { if (v > dMax) dMax = v; }));
+        bandsYMax = bandsYMax * 0.85 + dMax * 0.15;
+        bandsChart.options.scales.y.max = Math.max(bandsYMax * 1.2, 10);
+      } else { bandsChart.options.scales.y.min = 0; bandsChart.options.scales.y.max = scaleValue; }
+      bandsChart.data.labels = bandNames;
+      if (bandsChart.data.datasets.length !== channels.length) {
+        bandsChart.data.datasets = channels.map((ch, i) => ({ label: ch, data: values[i], backgroundColor: chartColors[i % chartColors.length] + "99" }));
+      } else { channels.forEach((_, i) => { bandsChart.data.datasets[i].data = values[i]; }); }
+      bandsChart.update("none");
+    }
+
+    // WebSocket with auto-reconnect
+    let wsWantOpen = false;
+    let wsReconnectTimer = null;
+
+    function openWS() {
+      wsWantOpen = true;
+      if (ws) return;
+      _connectWS();
+    }
+
+    function _connectWS() {
+      if (ws) return;
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${proto}://${location.host}/ws/stream`);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ mode: currentMode, window_sec: WINDOW_SEC, interval_ms: UPDATE_INTERVAL_MS }));
+        errorMsg.style.display = "none";
+        if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+      };
+      ws.onmessage = e => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === "timeseries") updateTimeSeriesChart(msg.channels, msg.data);
+        else if (msg.type === "fft") updateFFTChart(msg.channels, msg.freqs, msg.psd);
+        else if (msg.type === "bands") updateBandsChart(msg.channels, msg.bands, msg.values);
+        else if (msg.type === "error") { errorMsg.textContent = msg.message; errorMsg.style.display = "block"; }
+      };
+      ws.onclose = () => {
+        ws = null;
+        // Auto-reconnect if we still want it open
+        if (wsWantOpen && streaming) {
+          wsReconnectTimer = setTimeout(_connectWS, 1000);
+        }
+      };
+      ws.onerror = () => {
+        errorMsg.textContent = "WebSocket error - reconnecting...";
+        errorMsg.style.display = "block";
+      };
+    }
+
+    function closeWS() {
+      wsWantOpen = false;
+      if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+      if (ws) { ws.close(); ws = null; }
+
+      // Restore empty state
+      const emptyEl = document.getElementById('chart-empty');
+      if (emptyEl) {
+        emptyEl.style.display = 'flex';
+        setTimeout(() => { emptyEl.style.opacity = '1'; }, 10);
+        chartHasData = false;
+      }
+    }
+
+    // Periodic status polling to catch hardware disconnects
+    setInterval(async () => {
+      try {
+        const res = await fetch("/api/status");
+        const json = await res.json();
+        const wasStreaming = streaming;
+        connected = json.connected;
+        streaming = json.streaming;
+        setStatus();
+
+        // If server says streaming stopped but we still have WS open, close it
+        if (wasStreaming && !streaming) closeWS();
+        // If server says streaming but we lost WS, reconnect
+        if (streaming && !ws) openWS();
+      } catch { /* server unreachable, ignore */ }
+    }, 3000);
+
+    // Simulator
+    let useSimulator = false;
+    document.getElementById('toggle-simulator').onclick = async function() {
+      useSimulator = !useSimulator;
+      this.classList.toggle('active', useSimulator);
+      document.getElementById('simulator-controls').style.display = useSimulator ? 'block' : 'none';
+      const res = await postJSON('/api/use_simulator', { enabled: useSimulator });
+      // Switching mode stops streams
+      if (streaming) { streaming = false; closeWS(); }
+      connected = false;
+      setStatus();
+      showSuccess(useSimulator ? 'Simulator on' : 'Hardware mode');
+    };
+
+    document.getElementById('simulator-mode').onchange = async function() {
+      await postJSON('/api/simulator/mode', { mode: this.value });
+    };
+
+    // ===== DSP Controls =====
+    const dspHeader = document.getElementById('dsp-section-header');
+    const dspContent = document.getElementById('dsp-section-content');
+    const dspToggleIcon = document.getElementById('dsp-toggle-icon');
+
+    dspHeader.onclick = () => {
+      const visible = dspContent.style.display !== 'none';
+      dspContent.style.display = visible ? 'none' : 'block';
+      dspToggleIcon.innerHTML = visible ? '&#9654;' : '&#9660;';
+    };
+
+    // Toggle buttons
+    document.querySelectorAll('.dsp-toggle').forEach(btn => {
+      btn.onclick = () => {
+        btn.classList.toggle('active');
+        pushDspConfig();
+      };
+    });
+
+    // Smoothing slider
+    const dspSmoothingSlider = document.getElementById('dsp-smoothing');
+    const dspSmoothingVal = document.getElementById('dsp-smoothing-val');
+    let dspSmoothingThrottle = 0;
+
+    dspSmoothingSlider.addEventListener('input', (e) => {
+      dspSmoothingVal.textContent = parseFloat(e.target.value).toFixed(2);
+      const now = Date.now();
+      if (now - dspSmoothingThrottle > 200) {
+        pushDspConfig();
+        dspSmoothingThrottle = now;
+      }
+    });
+
+    dspSmoothingSlider.addEventListener('change', () => pushDspConfig());
+
+    async function pushDspConfig() {
+      const payload = {
+        car_enabled: document.getElementById('dsp-car').classList.contains('active'),
+        bandpass_enabled: document.getElementById('dsp-bandpass').classList.contains('active'),
+        notch_enabled: document.getElementById('dsp-notch').classList.contains('active'),
+        log_transform: document.getElementById('dsp-log').classList.contains('active'),
+        baseline_normalize: document.getElementById('dsp-baseline').classList.contains('active'),
+        artifact_enabled: document.getElementById('dsp-artifact').classList.contains('active'),
+        smoothing_alpha: parseFloat(dspSmoothingSlider.value),
+        smoothing_enabled: true,
+      };
+      await postJSON('/api/dsp_config', payload);
+    }
+
+    // Load DSP state on init
+    async function loadDspState() {
+      try {
+        const res = await fetch('/api/dsp_status');
+        const d = await res.json();
+        document.getElementById('dsp-car').classList.toggle('active', d.car_enabled);
+        document.getElementById('dsp-bandpass').classList.toggle('active', d.bandpass_enabled);
+        document.getElementById('dsp-notch').classList.toggle('active', d.notch_enabled);
+        document.getElementById('dsp-log').classList.toggle('active', d.log_transform);
+        document.getElementById('dsp-baseline').classList.toggle('active', d.baseline_normalize);
+        document.getElementById('dsp-artifact').classList.toggle('active', d.artifact_enabled);
+        dspSmoothingSlider.value = d.smoothing_alpha;
+        dspSmoothingVal.textContent = d.smoothing_alpha.toFixed(2);
+      } catch {}
+    }
+    loadDspState();
+
+    // ===== SFX Engine (Web Audio API - non-pitched clicks/taps) =====
+    const SFX = (() => {
+      let ctx = null;
+
+      function getCtx() {
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      }
+
+      // Short noise burst - like a soft click
+      function click() {
+        const c = getCtx();
+        const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.008), c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 8);
+        }
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const gain = c.createGain();
+        gain.gain.value = 0.08;
+        const filter = c.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 3000;
+        src.connect(filter).connect(gain).connect(c.destination);
+        src.start();
+      }
+
+      // Softer, shorter tick for hover
+      function hover() {
+        const c = getCtx();
+        const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.004), c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 12);
+        }
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const gain = c.createGain();
+        gain.gain.value = 0.035;
+        const filter = c.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 4000;
+        src.connect(filter).connect(gain).connect(c.destination);
+        src.start();
+      }
+
+      // Toggle on - brighter snap
+      function toggleOn() {
+        const c = getCtx();
+        const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.012), c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          const t = i / data.length;
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 6) * (t < 0.15 ? 1.5 : 1);
+        }
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const gain = c.createGain();
+        gain.gain.value = 0.1;
+        const filter = c.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 5000;
+        filter.Q.value = 1.5;
+        src.connect(filter).connect(gain).connect(c.destination);
+        src.start();
+      }
+
+      // Toggle off - duller thud
+      function toggleOff() {
+        const c = getCtx();
+        const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.01), c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 10);
+        }
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const gain = c.createGain();
+        gain.gain.value = 0.06;
+        const filter = c.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 2000;
+        src.connect(filter).connect(gain).connect(c.destination);
+        src.start();
+      }
+
+      return { click, hover, toggleOn, toggleOff };
+    })();
+
+    // Wire SFX to all interactive elements
+    function wireHoverSFX() {
+      // Buttons: hover + click
+      document.querySelectorAll('.btn, .mode-tab').forEach(el => {
+        el.addEventListener('mouseenter', SFX.hover);
+        el.addEventListener('mousedown', SFX.click);
+      });
+
+      // Toggle buttons: hover + toggle sound based on state
+      document.querySelectorAll('.toggle-btn').forEach(el => {
+        el.addEventListener('mouseenter', SFX.hover);
+        el.addEventListener('mousedown', () => {
+          if (el.classList.contains('active')) SFX.toggleOff();
+          else SFX.toggleOn();
+        });
+      });
+
+      // Toggle switches
+      document.querySelectorAll('.toggle-switch input').forEach(el => {
+        el.addEventListener('change', () => {
+          if (el.checked) SFX.toggleOn();
+          else SFX.toggleOff();
+        });
+      });
+
+      // Inputs: focus click
+      document.querySelectorAll('input[type="text"], input[type="number"]').forEach(el => {
+        el.addEventListener('focus', SFX.click);
+      });
+
+      // Slider: subtle tick on change (throttled)
+      let sliderThrottle = 0;
+      document.querySelectorAll('.custom-slider').forEach(el => {
+        el.addEventListener('input', () => {
+          const now = Date.now();
+          if (now - sliderThrottle > 60) {
+            SFX.hover();
+            sliderThrottle = now;
+          }
+        });
+      });
+
+      // Select dropdowns
+      document.querySelectorAll('select').forEach(el => {
+        el.addEventListener('change', SFX.click);
+        el.addEventListener('mousedown', SFX.hover);
+      });
+    }
+
+    // Init
+    refreshStatus();
+    setOscChip();
+    updateOscPreview();
+    updateButtonStates();
+    wireHoverSFX();
+  </script>
+</body>
+</html>
