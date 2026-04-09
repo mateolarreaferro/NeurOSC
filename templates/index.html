@@ -694,6 +694,15 @@
           <span id="stream-pill" class="status-pill">Idle</span>
         </div>
         <div class="field-group">
+          <label class="field-label">Device</label>
+          <select id="device-type" style="width: 100%; padding: 7px 10px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; margin-bottom: var(--space-sm);">
+            <option value="ganglion">OpenBCI Ganglion</option>
+            <option value="muse_2">Muse 2</option>
+            <option value="muse_3">Muse 3</option>
+            <option value="muse_athena">Muse Athena</option>
+          </select>
+        </div>
+        <div class="field-group">
           <input id="serial-input" type="text" placeholder="/dev/tty... or MAC address" />
         </div>
         <div class="btn-group" style="margin-bottom: 6px;">
@@ -837,7 +846,7 @@
           <!-- Channels -->
           <div class="osc-section">
             <div class="osc-section-title">Channels</div>
-            <div class="toggle-group">
+            <div class="toggle-group" id="osc-ch-container">
               <button class="toggle-btn active osc-ch-toggle" data-ch="CH1">CH1</button>
               <button class="toggle-btn active osc-ch-toggle" data-ch="CH2">CH2</button>
               <button class="toggle-btn active osc-ch-toggle" data-ch="CH3">CH3</button>
@@ -909,6 +918,12 @@
     let oscSendBands = false;
 
     // Granular OSC state
+    const deviceChannelMap = {
+      ganglion: ["CH1", "CH2", "CH3", "CH4"],
+      muse_2: ["TP9", "AF7", "AF8", "TP10"],
+      muse_3: ["TP9", "AF7", "AF8", "TP10"],
+      muse_athena: ["TP9", "AF7", "AF8", "TP10"],
+    };
     let oscChannels = ["CH1", "CH2", "CH3", "CH4"];
     let oscBands = ["delta", "theta", "alpha", "beta", "gamma"];
     let oscAbsolute = true;
@@ -1070,16 +1085,17 @@
     // Connect
     document.getElementById("btn-connect").onclick = async () => {
       const input = document.getElementById("serial-input").value.trim();
+      const deviceType = document.getElementById("device-type").value;
       const btn = document.getElementById("btn-connect");
       let payload;
-      if (!input) payload = { serial_port: "", mac_address: "" };
-      else if (input.includes(":")) payload = { serial_port: "", mac_address: input };
-      else payload = { serial_port: input, mac_address: "" };
+      if (!input) payload = { serial_port: "", mac_address: "", device_type: deviceType };
+      else if (input.includes(":")) payload = { serial_port: "", mac_address: input, device_type: deviceType };
+      else payload = { serial_port: input, mac_address: "", device_type: deviceType };
 
       btn.disabled = true; btn.textContent = "Connecting...";
       try {
         const json = await postJSON("/api/connect", payload);
-        if (json.status === "ok") { connected = true; showSuccess("Connected"); }
+        if (json.status === "ok") { connected = true; showSuccess("Connected to " + deviceType); }
         else showError(json.message || "Connection failed");
       } catch (e) { showError(e.message); }
       finally { btn.disabled = false; btn.textContent = "Connect"; setStatus(); }
@@ -1122,12 +1138,30 @@
     };
 
     // Channel toggles
-    document.querySelectorAll(".osc-ch-toggle").forEach(btn => {
-      btn.onclick = () => {
-        btn.classList.toggle("active");
-        oscChannels = Array.from(document.querySelectorAll(".osc-ch-toggle.active")).map(b => b.dataset.ch);
-        pushGranularConfig();
-      };
+    function bindChannelToggles() {
+      document.querySelectorAll(".osc-ch-toggle").forEach(btn => {
+        btn.onclick = () => {
+          btn.classList.toggle("active");
+          oscChannels = Array.from(document.querySelectorAll(".osc-ch-toggle.active")).map(b => b.dataset.ch);
+          pushGranularConfig();
+        };
+      });
+    }
+    bindChannelToggles();
+
+    function updateChannelButtons(deviceType) {
+      const channels = deviceChannelMap[deviceType] || deviceChannelMap.ganglion;
+      const container = document.getElementById("osc-ch-container");
+      container.innerHTML = channels.map(ch =>
+        `<button class="toggle-btn active osc-ch-toggle" data-ch="${ch}">${ch}</button>`
+      ).join("");
+      oscChannels = [...channels];
+      bindChannelToggles();
+      pushGranularConfig();
+    }
+
+    document.getElementById("device-type").addEventListener("change", function() {
+      updateChannelButtons(this.value);
     });
 
     // Band toggles

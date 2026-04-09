@@ -280,7 +280,7 @@ class SimulatorService:
         """
         return self.get_board_data(max_samples)
     
-    # ---------- Data access helpers (mimicking GanglionService) ----------
+    # ---------- Data access helpers (mimicking EEGService) ----------
     
     def get_timeseries_window(
         self,

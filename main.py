@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from openbci_service import GanglionService
+from openbci_service import EEGService, DEVICE_CONFIGS
 from simulator_service import SimulatorService
 
 app = FastAPI(title="Neuro - EEG Band Visualization & OSC")
@@ -31,7 +31,7 @@ app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 templates = Jinja2Templates(directory=str(_HERE / "templates"))
 
 # Global service instances
-service = GanglionService()
+service = EEGService()
 simulator = SimulatorService()
 
 # Mode flag
@@ -63,12 +63,24 @@ async def api_connect(payload: dict):
     else:
         serial_port = payload.get("serial_port", "")
         mac_address = payload.get("mac_address", "")
+        device_type = payload.get("device_type", "ganglion")
         timeout = int(payload.get("timeout", 15))
         try:
-            active.connect(serial_port=serial_port, mac_address=mac_address, timeout=timeout)
-            return {"status": "ok", "simulator": False}
+            active.connect(serial_port=serial_port, mac_address=mac_address,
+                           timeout=timeout, device_type=device_type)
+            return {"status": "ok", "simulator": False, "device_type": device_type}
         except Exception as e:
-            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+            msg = str(e)
+            # Provide actionable guidance for common BrainFlow errors
+            if "17" in msg or "GENERAL_ERROR" in msg:
+                msg += (" — This usually means BrainFlow native libraries are missing "
+                        "from the app bundle. If you repackaged the .app yourself, "
+                        "rebuild with the official build.sh script. "
+                        "Check /api/diagnostics for details.")
+            elif "BOARD_NOT_READY" in msg:
+                msg += (" — Make sure no other app (e.g. OpenBCI GUI) is using "
+                        "the serial port, and that the dongle is plugged in.")
+            return JSONResponse({"status": "error", "message": msg}, status_code=500)
 
 
 @app.post("/api/disconnect")
@@ -81,11 +93,68 @@ async def api_disconnect():
 @app.get("/api/status")
 async def api_status():
     active = get_active_service()
-    return {
+    result = {
         "connected": active.connected,
         "streaming": active.streaming,
         "simulator": USE_SIMULATOR,
     }
+    if not USE_SIMULATOR and hasattr(active, 'device_type'):
+        result["device_type"] = active.device_type
+    return result
+
+
+@app.get("/api/diagnostics")
+async def api_diagnostics():
+    """Check BrainFlow native library availability and system info."""
+    import os
+    import platform
+
+    results = {
+        "platform": platform.system(),
+        "python": platform.python_version(),
+        "bundled": getattr(sys, '_MEIPASS', None) is not None,
+    }
+
+    # Check BrainFlow native libs
+    try:
+        import brainflow
+        bf_dir = os.path.dirname(brainflow.__file__)
+        lib_dir = os.path.join(bf_dir, "lib")
+        results["brainflow_version"] = brainflow.__version__
+        results["brainflow_lib_dir"] = lib_dir
+        results["brainflow_lib_exists"] = os.path.isdir(lib_dir)
+
+        critical_libs = {
+            "BoardController": "Core BrainFlow (required)",
+            "GanglionLib": "Ganglion via BLED112 dongle",
+            "BrainFlowBluetooth": "Native Bluetooth (Ganglion BLE)",
+            "simpleble-c": "SimpleBLE backend (Muse, native BLE)",
+            "MuseLib": "Muse device support",
+            "DataHandler": "Signal processing (required)",
+        }
+
+        lib_status = {}
+        if os.path.isdir(lib_dir):
+            lib_files = os.listdir(lib_dir)
+            for lib_name, description in critical_libs.items():
+                found = any(lib_name in f for f in lib_files)
+                lib_status[lib_name] = {"found": found, "purpose": description}
+        else:
+            for lib_name, description in critical_libs.items():
+                lib_status[lib_name] = {"found": False, "purpose": description}
+
+        results["native_libs"] = lib_status
+        results["all_libs_ok"] = all(v["found"] for v in lib_status.values())
+    except ImportError:
+        results["brainflow_version"] = None
+        results["error"] = "brainflow package not installed"
+
+    # Supported devices
+    results["supported_devices"] = [
+        {"id": k, "label": v["label"]} for k, v in DEVICE_CONFIGS.items()
+    ]
+
+    return results
 
 
 @app.post("/api/use_simulator")
@@ -113,6 +182,17 @@ async def api_simulator_mode(payload: dict):
     return {"status": "ok", "mode": mode}
 
 
+@app.get("/api/devices")
+async def api_list_devices():
+    """List supported device types."""
+    return {
+        "devices": [
+            {"id": k, "label": v["label"], "channels": v["channel_names"]}
+            for k, v in DEVICE_CONFIGS.items()
+        ]
+    }
+
+
 @app.get("/api/ports")
 async def api_list_ports():
     ports = []
@@ -131,15 +211,30 @@ async def api_list_ports():
                 capture_output=True, text=True, timeout=5
             )
             lines = result.stdout.split('\n')
+            bt_keywords = ['ganglion', 'muse', 'athena']
             for i, line in enumerate(lines):
-                if 'ganglion' in line.lower():
+                if any(kw in line.lower() for kw in bt_keywords):
                     for j in range(max(0, i-5), min(len(lines), i+10)):
                         if 'Address:' in lines[j]:
                             mac = lines[j].split('Address:')[1].strip()
+                            name = line.strip().rstrip(':')
+                            # Infer device type from name
+                            name_lower = name.lower()
+                            if 'athena' in name_lower:
+                                dev_type = "muse_athena"
+                            elif 'muse-s' in name_lower or 'muse s' in name_lower:
+                                dev_type = "muse_athena"
+                            elif 'muse' in name_lower and '3' in name_lower:
+                                dev_type = "muse_3"
+                            elif 'muse' in name_lower:
+                                dev_type = "muse_2"
+                            else:
+                                dev_type = "ganglion"
                             bluetooth_devices.append({
-                                "name": line.strip().rstrip(':'),
+                                "name": name,
                                 "mac": mac,
-                                "type": "bluetooth"
+                                "type": "bluetooth",
+                                "device_type": dev_type,
                             })
                             break
         except Exception as e:

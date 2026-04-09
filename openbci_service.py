@@ -204,12 +204,47 @@ class SmoothingBuffer:
         self.smoothed_values = [None] * len(self.smoothed_values)
 
 
+# ─── Device Definitions ──────────────────────────────────────────────────────
+
+DEVICE_CONFIGS = {
+    "ganglion": {
+        "label": "OpenBCI Ganglion",
+        "board_id_serial": BoardIds.GANGLION_BOARD,
+        "board_id_ble": BoardIds.GANGLION_NATIVE_BOARD,
+        "channel_names": ["CH1", "CH2", "CH3", "CH4"],
+        "needs_board_config": True,
+    },
+    "muse_2": {
+        "label": "Muse 2",
+        "board_id_serial": BoardIds.MUSE_2_BLED_BOARD,
+        "board_id_ble": BoardIds.MUSE_2_BOARD,
+        "channel_names": ["TP9", "AF7", "AF8", "TP10"],
+        "needs_board_config": False,
+    },
+    "muse_3": {
+        "label": "Muse 3",
+        "board_id_serial": BoardIds.MUSE_2_BLED_BOARD,
+        "board_id_ble": BoardIds.MUSE_2_BOARD,
+        "channel_names": ["TP9", "AF7", "AF8", "TP10"],
+        "needs_board_config": False,
+    },
+    "muse_athena": {
+        "label": "Muse Athena",
+        "board_id_serial": BoardIds.MUSE_S_BLED_BOARD,
+        "board_id_ble": BoardIds.MUSE_S_BOARD,
+        "channel_names": ["TP9", "AF7", "AF8", "TP10"],
+        "needs_board_config": False,
+    },
+}
+
+
 # ─── Main Service ─────────────────────────────────────────────────────────────
 
-class GanglionService:
+class EEGService:
     def __init__(self):
         self.board: Optional[BoardShim] = None
         self.board_id = None
+        self.device_type: str = "ganglion"
         self.params = BrainFlowInputParams()
         self.connected = False
         self.streaming = False
@@ -231,18 +266,30 @@ class GanglionService:
             smoother.enabled = enabled
             smoother.alpha = self.smoothing_alpha
 
+    def _get_channel_names(self) -> List[str]:
+        config = DEVICE_CONFIGS.get(self.device_type, DEVICE_CONFIGS["ganglion"])
+        return config["channel_names"]
+
     # ---------- Connection ----------
 
-    def connect(self, serial_port: str = "", mac_address: str = "", timeout: int = 15):
+    def connect(self, serial_port: str = "", mac_address: str = "",
+                timeout: int = 15, device_type: str = "ganglion"):
         if self.connected:
             return
 
+        if device_type not in DEVICE_CONFIGS:
+            raise ValueError(f"Unknown device type: {device_type}. "
+                             f"Supported: {list(DEVICE_CONFIGS.keys())}")
+
+        self.device_type = device_type
+        config = DEVICE_CONFIGS[device_type]
+
         if serial_port:
-            self.board_id = BoardIds.GANGLION_BOARD
+            self.board_id = config["board_id_serial"]
             self.params.serial_port = serial_port
             self.params.mac_address = ""
         else:
-            self.board_id = BoardIds.GANGLION_NATIVE_BOARD
+            self.board_id = config["board_id_ble"]
             self.params.serial_port = ""
             self.params.mac_address = mac_address
 
@@ -257,16 +304,17 @@ class GanglionService:
         self.dsp.reset()
         self.band_smoothers.clear()
 
-        try:
-            import time
-            time.sleep(0.5)
-            self.board.config_board("]")
-            time.sleep(0.1)
-            for cmd in ["!", "@", "#", "$"]:
-                self.board.config_board(cmd)
-            time.sleep(0.1)
-        except Exception as e:
-            print(f"[Neuro] Board config warning: {e}")
+        if config["needs_board_config"]:
+            try:
+                import time
+                time.sleep(0.5)
+                self.board.config_board("]")
+                time.sleep(0.1)
+                for cmd in ["!", "@", "#", "$"]:
+                    self.board.config_board(cmd)
+                time.sleep(0.1)
+            except Exception as e:
+                print(f"[Neuro] Board config warning: {e}")
 
     def disconnect(self):
         if not self.connected or self.board is None:
@@ -285,12 +333,14 @@ class GanglionService:
             raise RuntimeError("Board not connected")
         if self.streaming:
             return
-        import time
-        try:
-            self.board.config_board("]")
-            time.sleep(0.2)
-        except Exception:
-            pass
+        config = DEVICE_CONFIGS.get(self.device_type, DEVICE_CONFIGS["ganglion"])
+        if config["needs_board_config"]:
+            import time
+            try:
+                self.board.config_board("]")
+                time.sleep(0.2)
+            except Exception:
+                pass
         self.board.start_stream(buffer_size)
         self.streaming = True
 
@@ -360,7 +410,8 @@ class GanglionService:
                 ch = ch[::step]
             ts_data.append(ch.tolist())
 
-        channel_names = [f"CH{idx+1}" for idx in range(eeg.shape[0])]
+        names = self._get_channel_names()
+        channel_names = names[:eeg.shape[0]] if len(names) >= eeg.shape[0] else [f"CH{i+1}" for i in range(eeg.shape[0])]
         return channel_names, ts_data
 
     def get_fft_spectrum(
@@ -376,7 +427,8 @@ class GanglionService:
         if eeg.size == 0:
             return [], [], []
 
-        channel_names = [f"CH{idx+1}" for idx in range(eeg.shape[0])]
+        names = self._get_channel_names()
+        channel_names = names[:eeg.shape[0]] if len(names) >= eeg.shape[0] else [f"CH{i+1}" for i in range(eeg.shape[0])]
         all_psd: List[List[float]] = []
         freq_list: List[float] = []
 
@@ -429,11 +481,12 @@ class GanglionService:
             return [], [b[0] for b in bands], []
 
         band_names = [b[0] for b in bands]
-        channel_names = [f"CH{idx+1}" for idx in range(eeg.shape[0])]
+        names = self._get_channel_names()
+        channel_names = names[:eeg.shape[0]] if len(names) >= eeg.shape[0] else [f"CH{i+1}" for i in range(eeg.shape[0])]
         all_band_vals: List[List[float]] = []
 
         for ch_idx in range(eeg.shape[0]):
-            ch_name = f"CH{ch_idx+1}"
+            ch_name = channel_names[ch_idx]
             sig = eeg[ch_idx]
             if sig.size < 32:
                 all_band_vals.append([0.0] * len(bands))
